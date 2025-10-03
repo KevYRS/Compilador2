@@ -11,45 +11,36 @@ Requerimiento 5: Implementar el cast.
 Completados: R1(11/10), R2(11/10), R3(12/10), R4(12/10), R5(14/10)
 */
 
-namespace sintaxis3
-{
-    class Lenguaje : Sintaxis
-    {
+namespace sintaxis3{
+    class Lenguaje : Sintaxis{
         Stack s;
         ListaVariables l;
         Variable.tipo maxBytes;
-        public Lenguaje()
-        {
+        public Lenguaje(){
             s = new Stack(5);
             l = new ListaVariables();
             Console.WriteLine("Iniciando analisis gramatical.");
         }
 
-        public Lenguaje(string nombre) : base(nombre)
-        {
+        public Lenguaje(string nombre) : base(nombre){
             s = new Stack(5);
             l = new ListaVariables();
             Console.WriteLine("Iniciando analisis gramatical.");
         }
         //Programa -> Libreria Main
-        public void Programa()
-        {
+        public void Programa(){
             Libreria();
             Main();
             l.imprime(bitacora);
         }
-
         //Libreria -> (#include <identificador(.h)?> Libreria) ?
-        private void Libreria()
-        {
-            if (getContenido() == "#")
-            {
+        private void Libreria(){
+            if (getContenido() == "#"){
                 match("#");
                 match("include");
                 match("<");
                 match(clasificaciones.identificador);
-                if (getContenido() == ".")
-                {
+                if (getContenido() == "."){
                     match(".");
                     match("h");
                 }
@@ -58,8 +49,7 @@ namespace sintaxis3
             }
         }
         //Main -> tipoDato main() BloqueInstrucciones 
-        private void Main()
-        {
+        private void Main(){
             match(clasificaciones.tipoDato);
             match("main");
             match("(");
@@ -67,83 +57,66 @@ namespace sintaxis3
             BloqueInstrucciones(true);
         }
         //BloqueInstrucciones -> { Instrucciones }
-        private void BloqueInstrucciones(bool ejecuta)
-        {
+        private void BloqueInstrucciones(bool ejecuta){
             match(clasificaciones.inicioBloque);
             Instrucciones(ejecuta);
             match(clasificaciones.finBloque);
         }
 
         //Lista_IDs -> identificador (= Expresion)? (,Lista_IDs)? 
-        private void Lista_IDs(Variable.tipo Tipos, bool ejecuta)
-        {
+        private void Lista_IDs(Variable.tipo Tipos, bool ejecuta){
             string nombre = getContenido();
             match(clasificaciones.identificador);
-            if (!l.Existe(nombre))
-            {
+            if (!l.Existe(nombre)){
                 l.Inserta(nombre, Tipos);
             }
-            else
-            {
+            else{
                 throw new Error(bitacora, "Error de sintaxis: Variable duplicada (" + nombre + ") " + "(" + linea + ", " + caracter + ")");
             }
-
-            if (getClasificacion() == clasificaciones.asignacion)
-            {
+            if (getClasificacion() == clasificaciones.asignacion){
                 match(clasificaciones.asignacion);
                 string contenidos = getContenido();
-                if (getClasificacion() == clasificaciones.cadena)
-                {
-                    if (Tipos == Variable.tipo.STRING)
-                    {
+                if (getClasificacion() == clasificaciones.cadena){
+                    if (Tipos == Variable.tipo.STRING){
                         match(clasificaciones.cadena);
-                        if (ejecuta)
-                        {
+                        if (ejecuta){
                             l.setValor(nombre, contenidos);
                         }
                     }
-                    else
-                    {
+                    else{
                         throw new Error(bitacora, "Error de semantico: No se puede asignar un STRING a un (" + Tipos + ") " + "(" + linea + ", " + caracter + ")");
                     }
                 }
-                else
-                {
+                else{
                     //Requerimiento 3
                     string valor;
                     maxBytes = Variable.tipo.CHAR;
                     Expresion();
                     valor = s.pop(bitacora, linea, caracter).ToString();
-                    if (tipoDatoExpresion(float.Parse(valor)) > maxBytes)
-                    {
+                    if (tipoDatoExpresion(float.Parse(valor)) > maxBytes){
                         maxBytes = tipoDatoExpresion(float.Parse(valor));
                     }
-                    if (l.getTipoDato(nombre) < maxBytes)
-                    {
+                    if (l.getTipoDato(nombre) < maxBytes){
                         throw new Error(bitacora, "Error de semantico: No se puede asignar un " + maxBytes + " a un (" + l.getTipoDato(nombre) + ") " + "(" + linea + ", " + caracter + ")");
                     }
-                    if (ejecuta)
-                    {
+                    if (ejecuta){
                         l.setValor(nombre, s.pop(bitacora, linea, caracter).ToString());
                     }
                 }
             }
 
-            if (getContenido() == ",")
-            {
+            if (getContenido() == ","){
                 match(",");
                 Lista_IDs(Tipos, ejecuta);
             }
         }
 
         //Variables -> tipoDato Lista_IDs; 
-        private void Variables(bool ejecuta)
-        {
+        private void Variables(bool ejecuta){
             string contenidos = getContenido();
             match(clasificaciones.tipoDato);
             Variable.tipo Tipos;
-            switch (contenidos)
-            {
+            switch (contenidos){
                 case "const":
                     Tipos = Variable.tipo.CONST;
                     break;
@@ -164,147 +137,117 @@ namespace sintaxis3
                     break;
             }
             Lista_IDs(Tipos, ejecuta);
-
             match(clasificaciones.finSentencia);
         }
         //Instruccion -> (If | cin | cout | const | Variables | asignacion) ;
-        private void Instruccion(bool ejecuta)
-        {
-            if (getContenido() == "do")
-            {
+        private void Instruccion(bool ejecuta){
+            if (getContenido() == "do"){
                 DOWHILE(ejecuta);
             }
-            else if (getContenido() == "while")
-            {
+            else if (getContenido() == "while"){
                 WHILE(ejecuta);
             }
-            else if (getContenido() == "for")
-            {
+            else if (getContenido() == "for"){
                 FOR(ejecuta);
             }
-            else if (getContenido() == "if")
-            {
+            else if (getContenido() == "if"){
                 IF(ejecuta);
             }
-            else if (getContenido() == "cin")
-            {
+            else if (getContenido() == "cin"){
                 //Requerimiento 4
                 match("cin");
                 match(clasificaciones.flujoEntrada);
                 string nombre = getContenido();
                 string valor = Console.ReadLine();
-                if (tipoDatoExpresion(float.Parse(valor)) > maxBytes)
-                {
+                if (tipoDatoExpresion(float.Parse(valor)) > maxBytes){
                     maxBytes = tipoDatoExpresion(float.Parse(valor));
                 }
-                if (l.getTipoDato(nombre) < maxBytes)
-                {
+                if (l.getTipoDato(nombre) < maxBytes){
                     throw new Error(bitacora, "Error de semantico: No se puede asignar un " + maxBytes + " a un (" + l.getTipoDato(nombre) + ") " + "(" + linea + ", " + caracter + ")");
                 }
 
                 string contenido = getContenido();
-                if (l.Existe(contenido))
-                {
+                if (l.Existe(contenido)){
                     match(clasificaciones.identificador);
-                    if (ejecuta)
-                    {
+                    if (ejecuta){
                         string lector = Console.ReadLine();
                         l.setValor(contenido, lector);
                     }
                 }
-                else
-                {
+                else{
                     throw new Error(bitacora, "Error de sintaxis: Variable no existe (" + contenido + ") " + "(" + linea + ", " + caracter + ")");
                 }
                 match(clasificaciones.finSentencia);
             }
-            else if (getContenido() == "cout")
-            {
+            else if (getContenido() == "cout"){
                 match("cout");
                 ListaFlujoSalida(ejecuta);
                 match(clasificaciones.finSentencia);
             }
-            else if (getContenido() == "const")
-            {
+            else if (getContenido() == "const"){
                 Constante(ejecuta);
             }
-            else if (getClasificacion() == clasificaciones.tipoDato)
-            {
+            else if (getClasificacion() == clasificaciones.tipoDato){
                 Variables(ejecuta);
             }
-            else
-            {
+            else{
                 string nombre = getContenido();
-                if (l.Existe(nombre))
-                {
+                if (l.Existe(nombre)){
                     match(clasificaciones.identificador);
                 }
-                else
-                {
+                else{
                     throw new Error(bitacora, "Error de sintaxis: Variable no existe (" + nombre + ") " + "(" + linea + ", " + caracter + ")");
                 }
                 match(clasificaciones.asignacion);
 
                 string valor;
                 //Requerimiento 2
-                if (getClasificacion() == clasificaciones.cadena)
-                {
+                if (getClasificacion() == clasificaciones.cadena){
                     valor = getContenido();
                     //match(clasificaciones.cadena);
-                    if (l.getTipoDato(nombre) == Variable.tipo.STRING)
-                    {
+                    if (l.getTipoDato(nombre) == Variable.tipo.STRING){
                         match(clasificaciones.cadena);
-                        if (ejecuta)
-                        {
+                        if (ejecuta){
                             l.setValor(nombre, valor);
                         }
                     }
-                    else
-                    {
+                    else{
                         throw new Error(bitacora, "Error de semantico: No se puede asignar un STRING a un (" + l.getTipoDato(nombre) + ") " + "(" + linea + ", " + caracter + ")");
                     }
                 }
-                else
-                {
+                else{
                     //Requerimiento 3
                     maxBytes = Variable.tipo.CHAR;
                     Expresion();
                     valor = s.pop(bitacora, linea, caracter).ToString();
-                    if (tipoDatoExpresion(float.Parse(valor)) > maxBytes)
-                    {
+                    if (tipoDatoExpresion(float.Parse(valor)) > maxBytes){
                         maxBytes = tipoDatoExpresion(float.Parse(valor));
                     }
-                    if (l.getTipoDato(nombre) < maxBytes)
-                    {
+                    if (l.getTipoDato(nombre) < maxBytes){
                         throw new Error(bitacora, "Error de semantico: No se puede asignar un " + maxBytes + " a un (" + l.getTipoDato(nombre) + ") " + "(" + linea + ", " + caracter + ")");
                     }
                 }
-                if (ejecuta)
-                {
+                if (ejecuta){
                     l.setValor(nombre, valor);
                 }
                 match(clasificaciones.finSentencia);
             }
         }
         //Instrucciones -> Instruccion Instrucciones?
-        private void Instrucciones(bool ejecuta)
-        {
+        private void Instrucciones(bool ejecuta){
             Instruccion(ejecuta);
-            if (getClasificacion() != clasificaciones.finBloque)
-            {
+            if (getClasificacion() != clasificaciones.finBloque){
                 Instrucciones(ejecuta);
             }
         }
 
         //Constante -> const tipoDato identificador = numero | cadena;
-        private void Constante(bool ejecuta)
-        {
+        private void Constante(bool ejecuta){
             match("const");
             string contenidos = getContenido();
             match(clasificaciones.tipoDato);
             Variable.tipo Tipos;
-            switch (contenidos)
-            {
+            switch (contenidos){
                 case "const":
                     Tipos = Variable.tipo.CONST;
                     break;
@@ -326,39 +269,33 @@ namespace sintaxis3
             }
 
             string content = getContenido();
-            if (!l.Existe(content) && ejecuta)
-            {
+            if (!l.Existe(content) && ejecuta){
                 match(clasificaciones.identificador);
             }
-            else
-            {
+            else{
                 throw new Error(bitacora, "Error de sintaxis: Variable no existe (" + content + ") " + "(" + linea + ", " + caracter + ")");
             }
             match(clasificaciones.asignacion);
 
             string normal;
-            if (getClasificacion() == clasificaciones.numero)
-            {
+            if (getClasificacion() == clasificaciones.numero){
                 normal = getContenido();
                 match(clasificaciones.numero);
                 l.setValor(content, normal);
             }
-            else
-            {
+            else{
                 normal = getContenido();
                 match(clasificaciones.cadena);
                 l.setValor(content, normal);
             }
 
-            if (ejecuta)
-            {
+            if (ejecuta){
                 l.setValor(content, normal);
             }
             match(clasificaciones.finSentencia);
         }
         //ListaFlujoSalida -> << cadena | identificador | numero (ListaFlujoSalida)?
-        private void ListaFlujoSalida(bool ejecuta)
-        {
+        private void ListaFlujoSalida(bool ejecuta){
             match(clasificaciones.flujoSalida);
 
             if (getClasificacion() == clasificaciones.numero)
@@ -714,4 +651,5 @@ namespace sintaxis3
             return n1;
         }
     }
+
 }
