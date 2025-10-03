@@ -18,5 +18,4 @@ namespace sintaxis3{
             Console.ReadKey();
         }
     }
-
 }
