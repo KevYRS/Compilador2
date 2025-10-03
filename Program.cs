@@ -5,8 +5,7 @@ namespace sintaxis3{
         static void Main(string[] args){
             try{
                 using (Lenguaje l = new Lenguaje("C:\\Archivos\\suma.cpp")){
-                    /*while (!l.FinDeArchivo())
-                    {
+                    /*while (!l.FinDeArchivo()){
                         l.NextToken();
                     }*/
                     l.Programa();
@@ -19,3 +18,4 @@ namespace sintaxis3{
         }
     }
 }
+
